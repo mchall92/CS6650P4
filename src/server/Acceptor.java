@@ -42,9 +42,9 @@ public class Acceptor extends Thread {
                 serverLogger.debug("isProposalAccepted is false, will respond to proposer " +
                         "with proposer's paxosId");
                 // update largestId to preparedId
-                largestId = preparedId;
                 response = "Promise " + preparedId;
             }
+            largestId = preparedId;
         }
         serverLogger.debug("Response to prepare: " + response);
         return response;
@@ -76,11 +76,11 @@ public class Acceptor extends Thread {
     }
 
     private void spindle() {
-        if (random.nextInt(3) == 0) {
+        if (random.nextInt(5) == 0) {
             // put acceptor to sleep
             serverLogger.debug("Putting acceptor to sleep for 10 seconds.");
             try {
-                Thread.sleep(10000);
+                Thread.sleep(7000);
             } catch (InterruptedException e) {
                 serverLogger.error("Error occurs when putting thread to sleep.");
                 e.printStackTrace();

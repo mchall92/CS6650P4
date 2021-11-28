@@ -8,6 +8,7 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.HashMap;
+import java.util.concurrent.*;
 
 public class Proposer {
 
@@ -18,12 +19,14 @@ public class Proposer {
 
     private String paxosValue;
 
-    HashMap<String, String> serverIpMap;
-    HashMap<String, Integer> serverPortMap;
+    private HashMap<String, String> serverIpMap;
+    private HashMap<String, Integer> serverPortMap;
+    private ScheduledExecutorService executor;
 
     public Proposer(int serverNumber) {
         paxosId = 0.0f;
         identifierId = (float) serverNumber / 100;
+        executor = Executors.newScheduledThreadPool(10);
     }
 
 
@@ -77,12 +80,28 @@ public class Proposer {
                 serverLogger.debug("Calling prepare at Ip: " + entry.getValue());
                 Registry registry =
                         LocateRegistry.getRegistry(entry.getValue(), serverPortMap.get(entry.getKey()));
+
                 KVInterface stub = (KVInterface) registry.lookup("utils.KVInterface");
 
-                String response = stub.prepare(paxosId + identifierId);
+                // set timeout
+                Future handler = executor.submit(new Callable(){
+                    @Override
+                    public String call() throws Exception {
+                        return stub.prepare(paxosId + identifierId);
+                    }
+                });
+                executor.schedule(new Runnable(){
+                    public void run(){
+                        handler.cancel(true);
+                    }
+                }, 3000, TimeUnit.MILLISECONDS);
+
+                String response = "";
+                response = (String) handler.get();
+
                 serverLogger.debug("Received response from prepare: " + response);
                 String[] msg = response.split("\\s+");
-                if (msg[0].equalsIgnoreCase("Promise")) {
+                if (msg.length != 0 && msg[0].equalsIgnoreCase("Promise")) {
                     count += 1;
                 }
                 // if length == 1 -> promise/failure message
@@ -104,8 +123,10 @@ public class Proposer {
                 }
             } catch (IndexOutOfBoundsException e) {
                 serverLogger.error("Response(msg) format error.");
-            } catch(SocketTimeoutException | RemoteException | NotBoundException e) {
+            } catch(RemoteException | NotBoundException | CancellationException e) {
                 // Proceed and check if the majority of acceptors respond with a promise
+            } catch (ExecutionException | InterruptedException e) {
+                e.printStackTrace();
             }
         }
         serverLogger.debug(count + " servers have replied with a promise");
@@ -130,10 +151,24 @@ public class Proposer {
                         LocateRegistry.getRegistry(entry.getValue(), serverPortMap.get(entry.getKey()));
                 KVInterface stub = (KVInterface) registry.lookup("utils.KVInterface");
 
-                String response = stub.propose(paxosId + identifierId, paxosValue);
+                Future handler = executor.submit(new Callable(){
+                    @Override
+                    public String call() throws Exception {
+                        return stub.propose(paxosId + identifierId, paxosValue);
+                    }
+                });
+                executor.schedule(new Runnable(){
+                    public void run(){
+                        handler.cancel(true);
+                    }
+                }, 3000, TimeUnit.MILLISECONDS);
+
+                String response = "";
+                response = (String) handler.get();
+
                 serverLogger.debug("Received response from propose: " + response);
                 String[] msg = response.split("\\s+");
-                if (msg[0].equalsIgnoreCase("Accept")) {
+                if (msg.length != 0 && msg[0].equalsIgnoreCase("Accept")) {
                     count += 1;
                 }
                 if (msg.length == 3) {
@@ -149,8 +184,10 @@ public class Proposer {
                 }
             } catch (IndexOutOfBoundsException e) {
                 serverLogger.error("Response(msg) format error.");
-            } catch(SocketTimeoutException | RemoteException | NotBoundException e) {
+            } catch(RemoteException | NotBoundException | ExecutionException | CancellationException e) {
                 // Proceed and check if the majority of acceptors respond with a promise
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
         serverLogger.debug(count + " servers have replied with an accepted message.");
