@@ -48,6 +48,7 @@ public class Proposer {
             // if no majority has responded with promise
             serverLogger.debug("The majority of acceptors did not respond with a promise with" +
                     " paxosId " + paxosId);
+            response = "Prepare stage failed: The majority of acceptors did not respond with a promise.";
         }
 
         if (isAccepted) {
@@ -61,8 +62,8 @@ public class Proposer {
 
         } else {
             serverLogger.debug("The majority of acceptors did not respond with an accepted message.");
+            response = "Accept stage failed: The majority of acceptors did not respond with an accepted message.";
         }
-
         return response;
     }
 
@@ -76,7 +77,7 @@ public class Proposer {
                 serverLogger.debug("Calling prepare at Ip: " + entry.getValue());
                 Registry registry =
                         LocateRegistry.getRegistry(entry.getValue(), serverPortMap.get(entry.getKey()));
-                KVInterface stub = (KVInterface) registry.lookup(entry.getKey());
+                KVInterface stub = (KVInterface) registry.lookup("utils.KVInterface");
 
                 String response = stub.prepare(paxosId + identifierId);
                 serverLogger.debug("Received response from prepare: " + response);
@@ -91,7 +92,7 @@ public class Proposer {
                     // check if returned paxosId == this paxosId
                     // update acceptedPaxosId only if returned paxosId is larger
                     float returnedAcceptedPaxosId = Float.parseFloat(msg[2]);
-                    if (Float.parseFloat(msg[1]) == paxosId) {
+                    if (Float.parseFloat(msg[1]) == paxosId + identifierId) {
                         if (returnedAcceptedPaxosId > acceptedPaxosId) {
                             acceptedPaxosId = returnedAcceptedPaxosId;
                             acceptedValue = msg[3];
@@ -127,7 +128,7 @@ public class Proposer {
                 serverLogger.debug("Calling propose at Ip: " + entry.getValue());
                 Registry registry =
                         LocateRegistry.getRegistry(entry.getValue(), serverPortMap.get(entry.getKey()));
-                KVInterface stub = (KVInterface) registry.lookup(entry.getKey());
+                KVInterface stub = (KVInterface) registry.lookup("utils.KVInterface");
 
                 String response = stub.propose(paxosId + identifierId, paxosValue);
                 serverLogger.debug("Received response from propose: " + response);
@@ -139,8 +140,8 @@ public class Proposer {
                     // format: promise, accepted_paxosId, accepted_VALUE
                     // check if returned accepted paxosId == this paxosId
                     // check if returned accepted_VALUE == this paxosValue
-                    float returnedAcceptedPaxosId = Float.parseFloat(msg[2]);
-                    if (!(Float.parseFloat(msg[1]) == paxosId && msg[2].equalsIgnoreCase(paxosValue))) {
+                    if (!(Float.parseFloat(msg[1]) == (paxosId + identifierId) &&
+                            msg[2].equalsIgnoreCase(paxosValue))) {
                         serverLogger.error("Should not reach here. Something wrong, " +
                                 "returned accepted Paxos Id is not equal to proposed Paxos Id or " +
                                 "returned accepted Paxos value is not equal to proposed Paxos value");
@@ -164,7 +165,7 @@ public class Proposer {
                 serverLogger.debug("Calling learners accepted at Ip: " + entry.getValue());
                 Registry registry =
                         LocateRegistry.getRegistry(entry.getValue(), serverPortMap.get(entry.getKey()));
-                KVInterface stub = (KVInterface) registry.lookup(entry.getKey());
+                KVInterface stub = (KVInterface) registry.lookup("utils.KVInterface");
 
                 message = stub.accepted(paxosValue);
                 serverLogger.debug("Received response from learner: " + message);

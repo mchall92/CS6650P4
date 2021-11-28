@@ -36,11 +36,9 @@ public class KVClient {
         kvstub = (KVInterface) registry.lookup("utils.KVInterface");
 
         try {
-
             runHardCodedCommand();
-
-            instructions();
-            runCustomCommands();
+//            instructions();
+//            runCustomCommands();
 
         } catch(Exception e){
             clientLogger.error(e.getMessage());
@@ -125,25 +123,25 @@ public class KVClient {
         String[] put7 = new String[]{"put", "B", "3"};
 
         execute(kvstub, put1);
-        execute(kvstub, put2);
-        execute(kvstub, put3);
-        execute(kvstub, put4);
-        execute(kvstub, put5);
-
-        execute(kvstub, get1);
-        execute(kvstub, get2);
-        execute(kvstub, get3);
-        execute(kvstub, get4);
-        execute(kvstub, get5);
-
-        execute(kvstub, del1);
-        execute(kvstub, del2);
-        execute(kvstub, del3);
-        execute(kvstub, del4);
-
-        execute(kvstub, put6);
-        execute(kvstub, del5);
-        execute(kvstub, put7);
+//        execute(kvstub, put2);
+//        execute(kvstub, put3);
+//        execute(kvstub, put4);
+//        execute(kvstub, put5);
+//
+//        execute(kvstub, get1);
+//        execute(kvstub, get2);
+//        execute(kvstub, get3);
+//        execute(kvstub, get4);
+//        execute(kvstub, get5);
+//
+//        execute(kvstub, del1);
+//        execute(kvstub, del2);
+//        execute(kvstub, del3);
+//        execute(kvstub, del4);
+//
+//        execute(kvstub, put6);
+//        execute(kvstub, del5);
+//        execute(kvstub, put7);
     }
 
     private static void runCustomCommands() {

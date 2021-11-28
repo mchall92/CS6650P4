@@ -18,7 +18,7 @@ public class KeyValue {
     }
 
     /**
-     * Put Key Vaule pair
+     * Put Key Value pair
      * @param key key
      * @param value value
      * @return true is key is valid (not null and length of key is greater than 1)
